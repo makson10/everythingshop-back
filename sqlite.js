@@ -8,7 +8,7 @@
 const fs = require("fs");
 
 // Initialize the database
-const dbFile = "./.data/choices.db";
+const dbFile = "./.data/everythingshop.db";
 const exists = fs.existsSync(dbFile);
 const sqlite3 = require("sqlite3").verbose();
 const dbWrapper = require("sqlite");
@@ -19,132 +19,100 @@ We're using the sqlite wrapper so that we can make async / await connections
 - https://www.npmjs.com/package/sqlite
 */
 dbWrapper
-  .open({
-    filename: dbFile,
-    driver: sqlite3.Database
-  })
-  .then(async dBase => {
-    db = dBase;
+    .open({
+        filename: dbFile,
+        driver: sqlite3.Database
+    })
+    .then(async dBase => {
+        db = dBase;
 
-    // We use try and catch blocks throughout to handle any database errors
-    try {
-      // The async / await syntax lets us write the db operations in a way that won't block the app
-      if (!exists) {
-        // Database doesn't exist yet - create Choices and Log tables
-        await db.run(
-          "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
-        );
+        try {
+            if (!exists) {
+                await db.run(
+                    "CREATE TABLE `admins` (login varchar(255) NOT NULL, password varchar(255) NOT NULL)"
+                );
 
-        // Add default choices to table
-        await db.run(
-          "INSERT INTO Choices (language, picks) VALUES ('HTML', 0), ('JavaScript', 0), ('CSS', 0)"
-        );
+                await db.run(
+                    "INSERT INTO `admins` (login, password) VALUES ('MaksonAdmin', 'MaksonAdmin')"
+                );
 
-        // Log can start empty - we'll insert a new record whenever the user chooses a poll option
-        await db.run(
-          "CREATE TABLE Log (id INTEGER PRIMARY KEY AUTOINCREMENT, choice TEXT, time STRING)"
-        );
-      } else {
-        // We have a database already - write Choices records to log for info
-        console.log(await db.all("SELECT * from Choices"));
+                await db.run(
+                    "CREATE TABLE `customers` (name varchar(255) NOT NULL, dateOfBirth varchar(255) NOT NULL, email varchar(255) NOT NULL, login varchar(255) NOT NULL, password varchar(255) NOT NULL)"
+                );
 
-        //If you need to remove a table from the database use this syntax
-        //db.run("DROP TABLE Logs"); //will fail if the table doesn't exist
-      }
-    } catch (dbError) {
-      console.error(dbError);
-    }
-  });
+                await db.run(
+                    "INSERT INTO `customers` (name, dateOfBirth, email, login, password) VALUES ('Maksim', '2006-12-25', 'pozitivmaks541@gmail.com', 'MaksonDev', 'MaksonDev'), ('maks again', '1990-10-10', 'maksbelyrabota1@gmail.com', 'dickdick', 'dickdick'), ('GIG', '2000-02-20', 'makson94021@gmail.com', 'fuckfuck', 'fuckfuck'), ('Максончик', '2000-02-20', 'pozitivmaks5@gmail.com', 'fuckfuckfuck', 'fuckfuckfuck')"
+                );
 
-// Our server script will call these methods to connect to the db
+                await db.run(
+                    "CREATE TABLE `feedback` (userName varchar(255) NOT NULL, date bigint(20) NOT NULL, feedbackText mediumtext NOT NULL, uniqueFeedbackId varchar(255) NOT NULL)"
+                );
+
+                await db.run(
+                    "INSERT INTO `feedback` (userName, date, feedbackText, uniqueFeedbackId) VALUES ('Макс m', 1685727861232, 'классный сайт братанчик, я б тебе отсосал', 'b18b121d-f167-47d6-81a1-2fd1e7e7a5d9')"
+                );
+
+                await db.run(
+                    "CREATE TABLE `google_customers` (id varchar(255) NOT NULL, name varchar(255) NOT NULL, email varchar(255) NOT NULL, picture varchar(255) NOT NULL)"
+                );
+
+                await db.run(
+                    "INSERT INTO `google_customers` (id, name, email, picture) VALUES ('104684886398385952212', 'Макс m', 'makson94021@gmail.com', 'https://lh3.googleusercontent.com/a/AGNmyxZTtA5onyRsnfgUXaqxIhygUmLl_ZOOPc8iR1sk=s96-c')"
+                );
+
+                await db.run(
+                    "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photo_id varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
+                );
+
+                await db.run(
+                    "INSERT INTO `products` (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('Банан', 'Большой, вкусный, желтый банан', '5MjsX6QOWMLtTR2yaMbCVreNKCagMwUXoK1bNjg6.png', 'Pozitiv_ Maks', 100, '416419da-dfc6-4dd1-b1fc-637c2379d2cd', '[]'), ('засосались сучки', 'ммммммммммммм какой засос', 'Sn2lWCe0gEWpRhEck0A9rc6XheI1dkFlCjtguM7z.png', 'Макс m', 2000, 'a1481bb8-556b-452f-a1c8-2857eae5c1e0', '[]')"
+                );
+            } else {
+                console.log('Found db file');
+            }
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    });
+
 module.exports = {
-  
-  /**
-   * Get the options in the database
-   *
-   * Return everything in the Choices table
-   * Throw an error in case of db connection issues
-   */
-  getOptions: async () => {
-    // We use a try catch block in case of db errors
-    try {
-      return await db.all("SELECT * from Choices");
-    } catch (dbError) {
-      // Database connection error
-      console.error(dbError);
+    getAllCustomers: async () => {
+        try {
+            return await db.all("SELECT * from customers");
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
+    getAllGoogleCustomers: async () => {
+        try {
+            return await db.all("SELECT * from google_customers");
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
+    getAllProducts: async () => {
+        try {
+            return await db.all("SELECT * from products");
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
+    getAllAdmins: async () => {
+        try {
+            return await db.all("SELECT * from admins");
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
+    getAllFeedbacks: async () => {
+        try {
+            return await db.all("SELECT * from feedback");
+        } catch (dbError) {
+            console.error(dbError);
+        }
     }
-  },
-
-  /**
-   * Process a user vote
-   *
-   * Receive the user vote string from server
-   * Add a log entry
-   * Find and update the chosen option
-   * Return the updated list of votes
-   */
-  processVote: async vote => {
-    // Insert new Log table entry indicating the user choice and timestamp
-    try {
-      // Check the vote is valid
-      const option = await db.all(
-        "SELECT * from Choices WHERE language = ?",
-        vote
-      );
-      if (option.length > 0) {
-        // Build the user data from the front-end and the current time into the sql query
-        await db.run("INSERT INTO Log (choice, time) VALUES (?, ?)", [
-          vote,
-          new Date().toISOString()
-        ]);
-
-        // Update the number of times the choice has been picked by adding one to it
-        await db.run(
-          "UPDATE Choices SET picks = picks + 1 WHERE language = ?",
-          vote
-        );
-      }
-
-      // Return the choices so far - page will build these into a chart
-      return await db.all("SELECT * from Choices");
-    } catch (dbError) {
-      console.error(dbError);
-    }
-  },
-
-  /**
-   * Get logs
-   *
-   * Return choice and time fields from all records in the Log table
-   */
-  getLogs: async () => {
-    // Return most recent 20
-    try {
-      // Return the array of log entries to admin page
-      return await db.all("SELECT * from Log ORDER BY time DESC LIMIT 20");
-    } catch (dbError) {
-      console.error(dbError);
-    }
-  },
-
-  /**
-   * Clear logs and reset votes
-   *
-   * Destroy everything in Log table
-   * Reset votes in Choices table to zero
-   */
-  clearHistory: async () => {
-    try {
-      // Delete the logs
-      await db.run("DELETE from Log");
-
-      // Reset the vote numbers
-      await db.run("UPDATE Choices SET picks = 0");
-
-      // Return empty array
-      return [];
-    } catch (dbError) {
-      console.error(dbError);
-    }
-  }
 };
