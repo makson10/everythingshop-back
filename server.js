@@ -1,16 +1,17 @@
 require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
-const db = require("./sqlite");
-
+const bodyParser = require("body-parser");
 const express = require("express");
 const app = express();
+
 
 const customersRouter = require("./routes/customers");
 const googleCustomersRouter = require("./routes/googleCustomers");
 const productsRouter = require("./routes/products");
 const adminsRouter = require("./routes/admins");
 const feedbacksRouter = require("./routes/feedbacks");
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 app.use('/customers', customersRouter);
 app.use('/googleCustomers', googleCustomersRouter);

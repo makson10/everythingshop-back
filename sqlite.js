@@ -114,5 +114,55 @@ module.exports = {
         } catch (dbError) {
             console.error(dbError);
         }
-    }
+    },
+
+    addNewCustomer: async ({ name, dateOfBirth, email, login, password }) => {
+        try {
+            await db.run(
+                `INSERT INTO customers (name, dateOfBirth, email, login, password) VALUES ('${name}', '${dateOfBirth}', '${email}', '${login}', '${password}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewGoogleCustomer: async ({ id, name, email, picture }) => {
+        try {
+            await db.run(
+                `INSERT INTO google_customers (id, name, email, picture) VALUES ('${id}', '${name}', '${email}', '${picture}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewGoogleCustomer: async ({ login, password }) => {
+        try {
+            await db.run(
+                `INSERT INTO admins (login, password) VALUES ('${login}', '${password}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewFeedback: async ({ userName, date, feedbackText, uniqueFeedbackId }) => {
+        try {
+            await db.run(
+                `INSERT INTO feedback (userName, date, feedbackText, uniqueFeedbackId) VALUES ('${userName}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    deleteFeedback: async (feedbackId) => {
+        try {
+            await db.run(
+                `DELETE FROM feedback WHERE uniqueFeedbackId = '${feedbackId}'`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
 };
