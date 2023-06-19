@@ -100,6 +100,14 @@ module.exports = {
         }
     },
 
+    getProduct: async (uniqueProductId) => {
+        try {
+            return await db.all(`SELECT * from products WHERE uniqueProductId="${uniqueProductId}" LIMIT 1`);
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
     getAllAdmins: async () => {
         try {
             return await db.all("SELECT * from admins");
@@ -136,10 +144,10 @@ module.exports = {
         }
     },
 
-    addNewGoogleCustomer: async ({ login, password }) => {
+    addNewProduct: async ({ photoFileId, title, description, creator, price, uniqueProductId, comments }) => {
         try {
             await db.run(
-                `INSERT INTO admins (login, password) VALUES ('${login}', '${password}')`
+                `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFileId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
             );
         } catch (error) {
             console.error(error);
@@ -156,10 +164,30 @@ module.exports = {
         }
     },
 
+    deleteProduct: async (productId) => {
+        try {
+            await db.run(
+                `DELETE FROM products WHERE uniqueProductId = '${productId}'`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
     deleteFeedback: async (feedbackId) => {
         try {
             await db.run(
                 `DELETE FROM feedback WHERE uniqueFeedbackId = '${feedbackId}'`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    updateProductComments: async (productId, newComments) => {
+        try {
+            await db.run(
+                `UPDATE products SET comments = '${newComments}' WHERE uniqueProductId = "${productId}"`
             );
         } catch (error) {
             console.error(error);
