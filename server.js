@@ -21,6 +21,10 @@ app.use("/products", productsRouter);
 app.use("/admins", adminsRouter);
 app.use("/feedbacks", feedbacksRouter);
 
+// make later check authorization header
+app.post('/getDropboxToken', (req, res) => {
+    res.status(200).send(process.env.DROPBOX_TOKEN);
+});
 
 app.listen(process.env.PORT, () => {
     console.log(`Server started on ${process.env.PORT} port`);

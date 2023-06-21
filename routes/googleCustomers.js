@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const db = require("../sqlite");
 const express = require('express');
 const googleCustomersRouter = express.Router();
@@ -42,7 +43,7 @@ const saveGoogleUserData = async (req, res, next) => {
 const generateJWTToken = async (req, res, next) => {
     const token = jwt.sign(req.body, process.env.JWT_ENCODE_KEY);
 
-    return res.status(200).json({ jwtToken: token, isGoogleUser: true });
+    return res.status(200).json({ jwtToken: token });
 }
 
 googleCustomersRouter.post('/register', [validateRegisterGoogleUserData, checkIsGoogleUserExist, saveGoogleUserData, generateJWTToken]);
@@ -67,33 +68,31 @@ googleCustomersRouter.post('/verify', [validateJWTToken, verifyGoogleUserByJWTTo
 // -----------------------------------------------------
 
 const validateLoginGoogleUserData = async (req, res, next) => {
-    const name = req.body.name;
-    const email = req.body.email;
+    const id = req.body.id;
 
-    if (!name || !email) {
-        return res.status(404).json({ error: 'Name or email is not valid!' });
+    if (!id) {
+        return res.status(404).json({ error: 'Id is not valid!' });
     } else next();
 }
 
 const generateJWTByGoogleUserData = async (req, res, next) => {
-    const name = req.body.name;
-    const email = req.body.email;
+    const id = req.body.id;
 
-    let googleUserData;
     const allGoogleCustomers = await db.getAllGoogleCustomers();
+    const googleUserData = allGoogleCustomers.find((googleCustomer) => googleCustomer.id === id);
 
-    await allGoogleCustomers.map((customer) => {
-        if (customer.name === name && customer.email === email) {
-            googleUserData = customer;
-        }
-    });
+    // await allGoogleCustomers.map((customer) => {
+    //     if (customer.name === name && customer.email === email) {
+    //         googleUserData = customer;
+    //     }
+    // });
 
     if (!googleUserData) {
-        return res.status(404).json({ error: 'User with this jwt is not exist!' });
+        return res.status(404).json({ error: 'User with this data is not exist!' });
     }
 
     const token = jwt.sign(googleUserData, process.env.JWT_ENCODE_KEY);
-    res.status(200).json({ jwtToken: token, isGoogleUser: true });
+    res.status(200).json({ jwtToken: token });
 }
 
 googleCustomersRouter.post('/login', [validateLoginGoogleUserData, generateJWTByGoogleUserData]);

@@ -1,23 +1,37 @@
-const BoxSDK = require('box-node-sdk');
+const dbx = require('../dropboxClient');
 const multer = require('multer');
-
 const db = require("../sqlite");
 const express = require('express');
 const productsRouter = express.Router();
 
-const sdk = new BoxSDK({
-    clientID: process.env.BOX_CLIENT_ID,
-    clientSecret: process.env.BOX_CLIENT_SECRET,
-});
-
-const client = sdk.getBasicClient(process.env.BOX_DEVELOPER_TOKEN);
-
 // -----------------------------------------------------
 
-productsRouter.get('/', async (req, res) => {
+const getAllProducts = async (req, res, next) => {
     const allProducts = await db.getAllProducts();
-    res.status(200).send(allProducts);
-});
+    req.body.allProducts = allProducts;
+    next();
+};
+
+const parseComments = async (req, res, next) => {
+    const allProducts = req.body.allProducts;
+
+    const allProductsWithParsedComments = allProducts.map((product) => {
+        const productWithParsedComments = { ...product };
+        productWithParsedComments.comments = JSON.parse(product.comments);
+
+        return productWithParsedComments;
+    });
+
+    req.body.allProductsWithParsedComments = allProductsWithParsedComments;
+    next();
+};
+
+const sendResponse = async (req, res, next) => {
+    const products = req.body.allProductsWithParsedComments;
+    res.status(200).send(products);
+};
+
+productsRouter.get('/', [getAllProducts, parseComments, sendResponse]);
 
 // -----------------------------------------------------
 
@@ -31,6 +45,7 @@ productsRouter.get('/:productId', async (req, res) => {
         res.status(418).json({ error: 'No product with this uniqueProductId already exists' })
     }
 
+    product.comments = JSON.parse(product.comments);
     res.status(200).send(product);
 });
 
@@ -57,14 +72,20 @@ const savePhotoFile = async (req, res, next) => {
     console.log(photoFile);
     console.log(uniqueProductId);
 
-    await client.files.uploadFile('0', `${uniqueProductId}.png`, photoFile.buffer).then(file => {
-        req.body.photoFileId = file.entries[0].id;
-        next();
-    });
+    dbx.filesUpload({ path: `/${uniqueProductId}.png`, contents: photoFile.buffer })
+        .then(res => {
+            console.log(res);
+            next();
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(404).json({ error: 'Error occured' });
+        });
 };
 
 const saveProductData = async (req, res, next) => {
     const productData = req.body;
+    productData.photoFileId = Math.random() * (10 ** 13);
 
     try {
         await db.addNewProduct(productData);
@@ -92,30 +113,24 @@ const getProductData = async (req, res, next) => {
     const [product] = await db.getProduct(productId);
     if (!product) {
         res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
-    } else {
-        const productPhotoFileId = await product.photo_id;
-        req.body.productPhotoFileId = productPhotoFileId;
+    } else next();
+};
 
-        next();
-    }
+const deleteProductPhotoFile = async (req, res, next) => {
+    const productId = req.params.productId;
+    await dbx.filesDeleteV2({ path: `/${productId}.png` });
+
+    next();
 };
 
 const deleteProductData = async (req, res, next) => {
     const productId = req.params.productId;
-    const productPhotoFileId = req.body.productPhotoFileId;
-
-    client.files.delete(productPhotoFileId)
-        .catch(err => {
-            if (err.statusCode === 412) {
-                console.log(err);
-            }
-        });
 
     await db.deleteProduct(productId);
     res.status(200).json({ success: true });
 };
 
-productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, getProductData, deleteProductData]);
+productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, getProductData, deleteProductPhotoFile, deleteProductData]);
 
 // -----------------------------------------------------
 
@@ -211,8 +226,7 @@ const removeComments = async (req, res, next) => {
 };
 
 
-productsRouter.post('/deleteComment/:productId/:commentId', [findCorrespondingProduct, getOldComments, checkIsThisCommentExist, removeComments, updateComments]);
-
+productsRouter.delete('/deleteComment/:productId/:commentId', [findCorrespondingProduct, getOldComments, checkIsThisCommentExist, removeComments, updateComments]);
 
 
 module.exports = productsRouter;

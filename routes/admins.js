@@ -2,6 +2,7 @@ const db = require("../sqlite");
 const express = require('express');
 const adminsRouter = express.Router();
 
+// -----------------------------------------------------
 
 const validateAdminData = async (req, res, next) => {
     const adminData = req.body;

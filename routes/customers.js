@@ -93,7 +93,7 @@ const generateJWTByUserData = async (req, res, next) => {
     });
 
     if (!userData) {
-        return res.status(404).json({ error: 'User with this jwt is not exist!' });
+        return res.status(404).json({ error: 'User with this credential is not exist!' });
     }
 
     const token = jwt.sign(userData, process.env.JWT_ENCODE_KEY);

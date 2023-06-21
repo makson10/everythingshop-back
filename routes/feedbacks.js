@@ -33,8 +33,8 @@ feedbacksRouter.post('/addNewFeedback', [validateFeedbackData, addNewFeedback]);
 
 // -----------------------------------------------------
 
-feedbacksRouter.delete('/deleteFeedback/:feedbackId', async (req, res, next) => {
-    const feedbackId = req.params.feedbackId
+feedbacksRouter.delete('/deleteFeedback/:feedbackId', async (req, res) => {
+    const feedbackId = req.params.feedbackId;
     await db.deleteFeedback(feedbackId);
 
     res.status(200).json({ success: true });
