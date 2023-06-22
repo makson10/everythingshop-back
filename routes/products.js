@@ -51,6 +51,17 @@ productsRouter.get('/:productId', async (req, res) => {
 
 // -----------------------------------------------------
 
+productsRouter.get('/doesProductExist/:productId', async (req, res) => {
+    const productId = req.params.productId;
+
+    const allProducts = await db.getAllProducts();
+    const doesProductExist = allProducts.some(product => product.uniqueProductId === productId);
+
+    res.status(200).send(doesProductExist);
+});
+
+// -----------------------------------------------------
+
 const validateProductData = (req, res, next) => {
     const productData = req.body;
     const photoFile = req.file;
