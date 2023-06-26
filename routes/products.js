@@ -26,12 +26,26 @@ const parseComments = async (req, res, next) => {
     next();
 };
 
+const parsePhotoIds = async (req, res, next) => {
+    const allProducts = req.body.allProductsWithParsedComments;
+
+    const allProductsWithParsedPhotoIds = allProducts.map((product) => {
+        const productWithParsedPhotoIds = { ...product };
+        productWithParsedPhotoIds.photo_id = JSON.parse(product.photo_id);
+
+        return productWithParsedPhotoIds;
+    });
+
+    req.body.allProductsWithParsedPhotoIds = allProductsWithParsedPhotoIds;
+    next();
+};
+
 const sendResponse = async (req, res, next) => {
-    const products = req.body.allProductsWithParsedComments;
+    const products = req.body.allProductsWithParsedPhotoIds;
     res.status(200).send(products);
 };
 
-productsRouter.get('/', [getAllProducts, parseComments, sendResponse]);
+productsRouter.get('/', [getAllProducts, parseComments, parsePhotoIds, sendResponse]);
 
 // -----------------------------------------------------
 
@@ -46,6 +60,7 @@ productsRouter.get('/:productId', async (req, res) => {
     }
 
     product.comments = JSON.parse(product.comments);
+    product.photo_id = JSON.parse(product.photo_id);
     res.status(200).send(product);
 });
 
@@ -64,7 +79,7 @@ productsRouter.get('/doesProductExist/:productId', async (req, res) => {
 
 const validateProductData = (req, res, next) => {
     const productData = req.body;
-    const photoFile = req.file;
+    const photoFile = req.files;
     const title = productData.title;
     const description = productData.description;
     const creator = productData.creator;
@@ -78,25 +93,31 @@ const validateProductData = (req, res, next) => {
 }
 
 const savePhotoFile = async (req, res, next) => {
-    const photoFile = req.file;
+    const photoFiles = req.files;
     const uniqueProductId = req.body.uniqueProductId;
-    console.log(photoFile);
-    console.log(uniqueProductId);
+    const photoIds = [];
 
-    dbx.filesUpload({ path: `/${uniqueProductId}.png`, contents: photoFile.buffer })
-        .then(res => {
-            console.log(res);
-            next();
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(404).json({ error: 'Error occured' });
-        });
+    photoFiles.map((photoFile, index) => {
+        const fileName = `${uniqueProductId}_${index}.png`;
+
+        dbx.filesUpload({ path: '/' + fileName, contents: photoFile.buffer })
+            .then(res => console.log(res))
+            .catch(err => {
+                console.log(err);
+                res.status(404).json({ error: 'Error occured' });
+            });
+
+        photoIds.push(fileName);
+    });
+
+    req.body.photoIds = photoIds;
+    next();
 };
 
 const saveProductData = async (req, res, next) => {
     const productData = req.body;
-    productData.photoFileId = Math.random() * (10 ** 13);
+    const photoIds = req.body.photoIds;
+    productData.photoFilesId = JSON.stringify(photoIds);
 
     try {
         await db.addNewProduct(productData);
@@ -106,7 +127,7 @@ const saveProductData = async (req, res, next) => {
     }
 }
 
-productsRouter.post('/addNewProduct', multer().single('file'), [validateProductData, savePhotoFile, saveProductData]);
+productsRouter.post('/addNewProduct', multer().array('file'), [validateProductData, savePhotoFile, saveProductData]);
 
 // -----------------------------------------------------
 
@@ -124,12 +145,20 @@ const getProductData = async (req, res, next) => {
     const [product] = await db.getProduct(productId);
     if (!product) {
         res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
-    } else next();
+    } else {
+        product.photo_id = JSON.parse(product.photo_id);
+        req.body.product = product;
+        next();
+    }
 };
 
 const deleteProductPhotoFile = async (req, res, next) => {
-    const productId = req.params.productId;
-    await dbx.filesDeleteV2({ path: `/${productId}.png` });
+    const product = req.body.product;
+    const productPhotoURLs = product.photo_id;
+
+    productPhotoURLs.map(async (photoURL) => {
+        await dbx.filesDeleteV2({ path: '/' + photoURL });
+    });
 
     next();
 };
@@ -147,7 +176,6 @@ productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, g
 
 const validateNewCommentData = async (req, res, next) => {
     const productId = req.params.productId;
-
     const commentData = req.body;
     const name = commentData.name;
     const date = commentData.date;

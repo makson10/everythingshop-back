@@ -132,10 +132,10 @@ module.exports = {
         }
     },
 
-    addNewProduct: async ({ photoFileId, title, description, creator, price, uniqueProductId, comments }) => {
+    addNewProduct: async ({ photoFilesId, title, description, creator, price, uniqueProductId, comments }) => {
         try {
             await db.run(
-                `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFileId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
+                `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFilesId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
             );
         } catch (error) {
             console.error(error);
