@@ -1,8 +1,13 @@
-const dbx = require('../dropboxClient');
-const multer = require('multer');
-const db = require("../sqlite");
 const express = require('express');
 const productsRouter = express.Router();
+const multer = require('multer');
+const db = require("../sqlite");
+const {
+    getPhotoAccessToken,
+    uploadFile,
+    deleteFile,
+} = require('../googleDriveClient');
+const fs = require('fs').promises;
 
 // -----------------------------------------------------
 
@@ -66,6 +71,13 @@ productsRouter.get('/:productId', async (req, res) => {
 
 // -----------------------------------------------------
 
+productsRouter.get('/getPhotoAccessKey', async (req, res) => {
+    const photoAccessKey = await getPhotoAccessToken();
+    res.status(200).json({ token: photoAccessKey.token });
+});
+
+// -----------------------------------------------------
+
 productsRouter.get('/doesProductExist/:productId', async (req, res) => {
     const productId = req.params.productId;
 
@@ -92,32 +104,58 @@ const validateProductData = (req, res, next) => {
     } else next();
 }
 
-const savePhotoFile = async (req, res, next) => {
+const saveFilesLocaly = async (req, res, next) => {
     const photoFiles = req.files;
-    const uniqueProductId = req.body.uniqueProductId;
-    const photoIds = [];
+    const localFileNames = [];
 
-    photoFiles.map((photoFile, index) => {
-        const fileName = `${uniqueProductId}_${index}.png`;
+    await Promise.all(
+        photoFiles.map(async (file) => {
+            const fileName = file.originalname;
 
-        dbx.filesUpload({ path: '/' + fileName, contents: photoFile.buffer })
-            .then(res => console.log(res))
-            .catch(err => {
-                console.log(err);
-                res.status(404).json({ error: 'Error occured' });
-            });
+            await fs.writeFile(
+                process.cwd() + '/temporarilyFiles/' + fileName,
+                new Uint8Array(Buffer.from(file.buffer)),
+            );
 
-        photoIds.push(fileName);
-    });
+            localFileNames.push(fileName);
+        })
+    );
 
-    req.body.photoIds = photoIds;
+    req.body.localFileNames = localFileNames;
+    next();
+};
+
+const storeFilesInGoogleDrive = async (req, res, next) => {
+    const localFileNames = req.body.localFileNames;
+    const googleDrivePhotoIds = [];
+
+    await Promise.all(
+        localFileNames.map(async (fileName) => {
+            const fileId = await uploadFile(fileName);
+            googleDrivePhotoIds.push(fileId);
+        })
+    );
+
+    req.body.googleDrivePhotoIds = googleDrivePhotoIds;
+    next();
+};
+
+const deleteLocalFiles = async (req, res, next) => {
+    const localFileNames = req.body.localFileNames;
+
+    await Promise.all(
+        localFileNames.map(async (fileName) => {
+            await fs.unlink(process.cwd() + '/temporarilyFiles/' + fileName);
+        })
+    );
+
     next();
 };
 
 const saveProductData = async (req, res, next) => {
     const productData = req.body;
-    const photoIds = req.body.photoIds;
-    productData.photoFilesId = JSON.stringify(photoIds);
+    const googleDrivePhotoIds = req.body.googleDrivePhotoIds;
+    productData.photoFilesId = JSON.stringify(googleDrivePhotoIds);
 
     try {
         await db.addNewProduct(productData);
@@ -127,7 +165,17 @@ const saveProductData = async (req, res, next) => {
     }
 }
 
-productsRouter.post('/addNewProduct', multer().array('file'), [validateProductData, savePhotoFile, saveProductData]);
+productsRouter.post(
+    '/addNewProduct',
+    multer().array('file'),
+    [
+        validateProductData,
+        saveFilesLocaly,
+        storeFilesInGoogleDrive,
+        deleteLocalFiles,
+        saveProductData,
+    ]
+);
 
 // -----------------------------------------------------
 
@@ -152,13 +200,15 @@ const getProductData = async (req, res, next) => {
     }
 };
 
-const deleteProductPhotoFile = async (req, res, next) => {
+const deleteProductPhotoFiles = async (req, res, next) => {
     const product = req.body.product;
-    const productPhotoURLs = product.photo_id;
+    const photoIds = product.photo_id;
 
-    productPhotoURLs.map(async (photoURL) => {
-        await dbx.filesDeleteV2({ path: '/' + photoURL });
-    });
+    await Promise.all(
+        photoIds.map(async (photoId) => {
+            await deleteFile(photoId);
+        })
+    );
 
     next();
 };
@@ -170,7 +220,7 @@ const deleteProductData = async (req, res, next) => {
     res.status(200).json({ success: true });
 };
 
-productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, getProductData, deleteProductPhotoFile, deleteProductData]);
+productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, getProductData, deleteProductPhotoFiles, deleteProductData]);
 
 // -----------------------------------------------------
 
