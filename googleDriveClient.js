@@ -1,6 +1,7 @@
 const { google } = require('googleapis');
 const serviceAccountCredentials = require('./googleCredentials.json');
 const fs = require('fs');
+const baseFileFolderPath = process.cwd() + '/temporarilyFiles/';
 
 const scopes = ['https://www.googleapis.com/auth/drive'];
 const auth = new google.auth.JWT(
@@ -9,12 +10,8 @@ const auth = new google.auth.JWT(
 const drive = google.drive({ version: 'v3', auth });
 
 const getPhotoAccessToken = async () => {
-    try {
-        const photoAccessKey = await auth.getAccessToken();
-        return photoAccessKey;
-    } catch (error) {
-        console.error(error);
-    }
+    const photoAccessKey = await auth.getAccessToken();
+    return photoAccessKey;
 };
 
 const uploadFile = async (localFileName) => {
@@ -23,7 +20,7 @@ const uploadFile = async (localFileName) => {
         fields: 'id',
     };
 
-    const filePath = process.cwd() + '/temporarilyFiles/' + localFileName;
+    const filePath = baseFileFolderPath + localFileName;
 
     const media = {
         mimeType: 'image/png',

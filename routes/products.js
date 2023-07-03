@@ -8,66 +8,7 @@ const {
     deleteFile,
 } = require('../googleDriveClient');
 const fs = require('fs').promises;
-
-// -----------------------------------------------------
-
-const getAllProducts = async (req, res, next) => {
-    const allProducts = await db.getAllProducts();
-    req.body.allProducts = allProducts;
-    next();
-};
-
-const parseComments = async (req, res, next) => {
-    const allProducts = req.body.allProducts;
-
-    const allProductsWithParsedComments = allProducts.map((product) => {
-        const productWithParsedComments = { ...product };
-        productWithParsedComments.comments = JSON.parse(product.comments);
-
-        return productWithParsedComments;
-    });
-
-    req.body.allProductsWithParsedComments = allProductsWithParsedComments;
-    next();
-};
-
-const parsePhotoIds = async (req, res, next) => {
-    const allProducts = req.body.allProductsWithParsedComments;
-
-    const allProductsWithParsedPhotoIds = allProducts.map((product) => {
-        const productWithParsedPhotoIds = { ...product };
-        productWithParsedPhotoIds.photo_id = JSON.parse(product.photo_id);
-
-        return productWithParsedPhotoIds;
-    });
-
-    req.body.allProductsWithParsedPhotoIds = allProductsWithParsedPhotoIds;
-    next();
-};
-
-const sendResponse = async (req, res, next) => {
-    const products = req.body.allProductsWithParsedPhotoIds;
-    res.status(200).send(products);
-};
-
-productsRouter.get('/', [getAllProducts, parseComments, parsePhotoIds, sendResponse]);
-
-// -----------------------------------------------------
-
-productsRouter.get('/:productId', async (req, res) => {
-    const productId = req.params.productId;
-
-    const allProducts = await db.getAllProducts();
-    const product = allProducts.find(product => product.uniqueProductId === productId);
-
-    if (!product) {
-        res.status(418).json({ error: 'No product with this uniqueProductId already exists' })
-    }
-
-    product.comments = JSON.parse(product.comments);
-    product.photo_id = JSON.parse(product.photo_id);
-    res.status(200).send(product);
-});
+const baseFileFolderPath = process.cwd() + '/temporarilyFiles/';
 
 // -----------------------------------------------------
 
@@ -78,28 +19,78 @@ productsRouter.get('/getPhotoAccessKey', async (req, res) => {
 
 // -----------------------------------------------------
 
+const getAllProducts = async (req, res, next) => {
+    const allProducts = await db.getAllProducts();
+
+    req.body.allProducts = allProducts;
+    next();
+};
+
+const parseCommentsAndPhotoIds = async (req, res, next) => {
+    const { allProducts } = req.body;
+
+    const allProductsWithParsedData = allProducts.map((product) => {
+        const productWithParsedData = { ...product };
+
+        productWithParsedData.comments = JSON.parse(product.comments);
+        productWithParsedData.photo_id = JSON.parse(product.photo_id);
+
+        return productWithParsedData;
+    });
+
+    req.body.allProductsWithParsedData = allProductsWithParsedData;
+    next();
+};
+
+const sendResponse = async (req, res, next) => {
+    const { allProductsWithParsedData: products } = req.body;
+    res.status(200).json(products);
+};
+
+productsRouter.get('/', [getAllProducts, parseCommentsAndPhotoIds, sendResponse]);
+
+// -----------------------------------------------------
+
+const getProductData = async (req, res, next) => {
+    const { productId } = req.params;
+
+    const [product] = await db.getProduct(productId);
+    if (!product) {
+        res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
+    } else {
+        product.photo_id = JSON.parse(product.photo_id);
+        req.body.product = product;
+        next();
+    }
+};
+
+const sendProductDataResponse = async (req, res, next) => {
+    const { product } = req.body;
+    product.comments = JSON.parse(product.comments);
+
+    res.status(200).json(product);
+};
+
+productsRouter.get('/:productId', [getProductData, sendProductDataResponse]);
+
+// -----------------------------------------------------
+
 productsRouter.get('/doesProductExist/:productId', async (req, res) => {
-    const productId = req.params.productId;
+    const { productId } = req.params;
 
     const allProducts = await db.getAllProducts();
     const doesProductExist = allProducts.some(product => product.uniqueProductId === productId);
 
-    res.status(200).send(doesProductExist);
+    res.status(200).json(doesProductExist);
 });
 
 // -----------------------------------------------------
 
 const validateProductData = (req, res, next) => {
-    const productData = req.body;
-    const photoFile = req.files;
-    const title = productData.title;
-    const description = productData.description;
-    const creator = productData.creator;
-    const price = productData.price;
-    const uniqueProductId = productData.uniqueProductId;
-    const comments = productData.comments;
+    const photoFiles = req.files;
+    const { title, description, creator, price, uniqueProductId, comments } = req.body;
 
-    if (!photoFile || !title || !description || !creator || !price || !uniqueProductId || !comments) {
+    if (!photoFiles.length || !title || !description || !creator || !price || !uniqueProductId || !comments) {
         res.status(404).json({ error: 'Product data is not valid!' });
     } else next();
 }
@@ -113,7 +104,7 @@ const saveFilesLocaly = async (req, res, next) => {
             const fileName = file.originalname;
 
             await fs.writeFile(
-                process.cwd() + '/temporarilyFiles/' + fileName,
+                baseFileFolderPath + fileName,
                 new Uint8Array(Buffer.from(file.buffer)),
             );
 
@@ -126,7 +117,7 @@ const saveFilesLocaly = async (req, res, next) => {
 };
 
 const storeFilesInGoogleDrive = async (req, res, next) => {
-    const localFileNames = req.body.localFileNames;
+    const { localFileNames } = req.body;
     const googleDrivePhotoIds = [];
 
     await Promise.all(
@@ -141,11 +132,11 @@ const storeFilesInGoogleDrive = async (req, res, next) => {
 };
 
 const deleteLocalFiles = async (req, res, next) => {
-    const localFileNames = req.body.localFileNames;
+    const { localFileNames } = req.body;
 
     await Promise.all(
         localFileNames.map(async (fileName) => {
-            await fs.unlink(process.cwd() + '/temporarilyFiles/' + fileName);
+            await fs.unlink(baseFileFolderPath + fileName);
         })
     );
 
@@ -154,8 +145,7 @@ const deleteLocalFiles = async (req, res, next) => {
 
 const saveProductData = async (req, res, next) => {
     const productData = req.body;
-    const googleDrivePhotoIds = req.body.googleDrivePhotoIds;
-    productData.photoFilesId = JSON.stringify(googleDrivePhotoIds);
+    productData.photoFilesId = JSON.stringify(productData.googleDrivePhotoIds);
 
     try {
         await db.addNewProduct(productData);
@@ -179,30 +169,8 @@ productsRouter.post(
 
 // -----------------------------------------------------
 
-const validateDeleteProductData = async (req, res, next) => {
-    const productId = req.params.productId;
-
-    if (!productId) {
-        res.status(404).json({ success: false, errorMessage: 'Product id is not valid!' });
-    } else next();
-};
-
-const getProductData = async (req, res, next) => {
-    const productId = req.params.productId;
-
-    const [product] = await db.getProduct(productId);
-    if (!product) {
-        res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
-    } else {
-        product.photo_id = JSON.parse(product.photo_id);
-        req.body.product = product;
-        next();
-    }
-};
-
 const deleteProductPhotoFiles = async (req, res, next) => {
-    const product = req.body.product;
-    const photoIds = product.photo_id;
+    const { photo_id: photoIds } = req.body.product;
 
     await Promise.all(
         photoIds.map(async (photoId) => {
@@ -214,60 +182,47 @@ const deleteProductPhotoFiles = async (req, res, next) => {
 };
 
 const deleteProductData = async (req, res, next) => {
-    const productId = req.params.productId;
+    const { productId } = req.params;
 
     await db.deleteProduct(productId);
     res.status(200).json({ success: true });
 };
 
-productsRouter.delete('/deleteProduct/:productId', [validateDeleteProductData, getProductData, deleteProductPhotoFiles, deleteProductData]);
+productsRouter.delete(
+    '/deleteProduct/:productId',
+    [
+        getProductData,
+        deleteProductPhotoFiles,
+        deleteProductData,
+    ]
+);
 
 // -----------------------------------------------------
 
 const validateNewCommentData = async (req, res, next) => {
-    const productId = req.params.productId;
-    const commentData = req.body;
-    const name = commentData.name;
-    const date = commentData.date;
-    const picture = commentData.picture;
-    const text = commentData.text;
-    const uniqueCommentId = commentData.uniqueCommentId;
+    const { name, date, picture, text, uniqueCommentId } = req.body;
 
-    if (!productId || !name || !date || !picture || !text || !uniqueCommentId) {
-        return res.status(404).json({ error: 'New comment data is not valid!' });
+    if (!name || !date || !picture || !text || !uniqueCommentId) {
+        res.status(404).json({ error: 'New comment data is not valid!' });
     } else next();
 };
 
-const findCorrespondingProduct = async (req, res, next) => {
-    const productId = req.params.productId;
-
-    const [product] = await db.getProduct(productId);
-    if (!product) {
-        res.status(404).json({ success: true, errorMessage: 'Product with this uniqueProductId not found!' });
-    } else {
-        req.body.product = product;
-        next();
-    }
-};
-
 const getOldComments = async (req, res, next) => {
-    const product = req.body.product;
+    const { product: { comments: rawOldComments } } = req.body;
 
-    const rawOldComments = await product.comments;
     const oldComments = await JSON.parse(rawOldComments);
     req.body.oldComments = oldComments;
-
     next();
 };
 
 const addNewComment = async (req, res, next) => {
-    const oldComments = req.body.oldComments;
+    const { oldComments, name, date, picture, text, uniqueCommentId } = req.body;
     const newComment = {
-        name: req.body.name,
-        date: req.body.date,
-        picture: req.body.picture,
-        text: req.body.text,
-        uniqueCommentId: req.body.uniqueCommentId,
+        name: name,
+        date: date,
+        picture: picture,
+        text: text,
+        uniqueCommentId: uniqueCommentId,
     };
 
     const newComments = [...oldComments, newComment];
@@ -277,22 +232,30 @@ const addNewComment = async (req, res, next) => {
 };
 
 const updateComments = async (req, res, next) => {
-    const productId = req.params.productId;
-    const newComments = req.body.newComments;
+    const { productId } = req.params;
+    const { newComments } = req.body;
     const newCommentsInJSON = JSON.stringify(newComments);
 
     await db.updateProductComments(productId, newCommentsInJSON);
-
     res.status(200).json({ success: true });
 };
 
-productsRouter.post('/addComment/:productId', [validateNewCommentData, findCorrespondingProduct, getOldComments, addNewComment, updateComments]);
+productsRouter.post(
+    '/addComment/:productId',
+    [
+        validateNewCommentData,
+        getProductData,
+        getOldComments,
+        addNewComment,
+        updateComments
+    ]
+);
 
 // -----------------------------------------------------
 
 const checkIsThisCommentExist = async (req, res, next) => {
-    const commentId = req.params.commentId;
-    const oldComments = req.body.oldComments;
+    const { commentId } = req.params;
+    const { oldComments } = req.body;
 
     const isCommentExist = oldComments.some((comment) => comment.uniqueCommentId === commentId);
 
@@ -302,8 +265,8 @@ const checkIsThisCommentExist = async (req, res, next) => {
 };
 
 const removeComments = async (req, res, next) => {
-    const commentId = req.params.commentId;
-    const oldComments = req.body.oldComments;
+    const { commentId } = req.params;
+    const { oldComments } = req.body;
 
     const commentForDeleteIndex = oldComments.findIndex(comment => comment.uniqueCommentId === commentId);
 
@@ -315,7 +278,16 @@ const removeComments = async (req, res, next) => {
 };
 
 
-productsRouter.delete('/deleteComment/:productId/:commentId', [findCorrespondingProduct, getOldComments, checkIsThisCommentExist, removeComments, updateComments]);
+productsRouter.delete(
+    '/deleteComment/:productId/:commentId',
+    [
+        getProductData,
+        getOldComments,
+        checkIsThisCommentExist,
+        removeComments,
+        updateComments,
+    ]
+);
 
 
 module.exports = productsRouter;

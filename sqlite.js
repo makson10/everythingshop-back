@@ -1,9 +1,8 @@
 const fs = require("fs");
-
-const dbFile = "./.data/everythingshop.db";
+const dbFile = process.cwd() + "/.data/everythingshop.db";
 const exists = fs.existsSync(dbFile);
-const sqlite3 = require("sqlite3").verbose();
 const dbWrapper = require("sqlite");
+const sqlite3 = require("sqlite3").verbose();
 let db;
 
 dbWrapper
@@ -55,8 +54,6 @@ dbWrapper
                 await db.run(
                     "INSERT INTO `products` (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('Банан', 'Большой, вкусный, желтый банан', '5MjsX6QOWMLtTR2yaMbCVreNKCagMwUXoK1bNjg6.png', 'Pozitiv_ Maks', 100, '416419da-dfc6-4dd1-b1fc-637c2379d2cd', '[]'), ('засосались сучки', 'ммммммммммммм какой засос', 'Sn2lWCe0gEWpRhEck0A9rc6XheI1dkFlCjtguM7z.png', 'Макс m', 2000, 'a1481bb8-556b-452f-a1c8-2857eae5c1e0', '[]')"
                 );
-            } else {
-                console.log('Found db file');
             }
         } catch (dbError) {
             console.error(dbError);
@@ -142,10 +139,10 @@ module.exports = {
         }
     },
 
-    addNewFeedback: async ({ userName, date, feedbackText, uniqueFeedbackId }) => {
+    addNewFeedback: async ({ name, date, feedbackText, uniqueFeedbackId }) => {
         try {
             await db.run(
-                `INSERT INTO feedback (userName, date, feedbackText, uniqueFeedbackId) VALUES ('${userName}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
+                `INSERT INTO feedback (userName, date, feedbackText, uniqueFeedbackId) VALUES ('${name}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
             );
         } catch (error) {
             console.error(error);

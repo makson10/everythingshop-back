@@ -1,33 +1,28 @@
-const jwt = require('jsonwebtoken');
-const db = require("../sqlite");
 const express = require('express');
 const customersRouter = express.Router();
+const db = require("../sqlite");
+const jwt = require('jsonwebtoken');
+const JWT_ENCODE_KEY = process.env.JWT_ENCODE_KEY;
 
 // -----------------------------------------------------
 
 customersRouter.get('/', async (req, res) => {
     const allCustomers = await db.getAllCustomers();
-    res.status(200).send(allCustomers);
+    res.status(200).json(allCustomers);
 });
 
 // -----------------------------------------------------
 
 const validateRegisterUserData = (req, res, next) => {
-    const userData = req.body;
-    const name = userData.name;
-    const dateOfBirth = userData.dateOfBirth;
-    const email = userData.email;
-    const login = userData.login;
-    const password = userData.password;
+    const { name, dateOfBirth, email, login, password } = req.body;
 
     if (!name || !dateOfBirth || !email || !login || !password) {
-        return res.status(404).json({ error: 'User data is not valid!' });
+        res.status(404).json({ error: 'User data is not valid!' });
     } else next();
 }
 
 const checkIsUserExist = async (req, res, next) => {
-    const email = req.body.email;
-    const login = req.body.login;
+    const { email, login } = req.body;
 
     const allCustomers = await db.getAllCustomers();
     const isUserExist = allCustomers.some((customer) => customer.email === email && customer.login === login);
@@ -43,24 +38,33 @@ const saveUserData = async (req, res, next) => {
 }
 
 const generateJWTToken = async (req, res, next) => {
-    const token = jwt.sign(req.body, process.env.JWT_ENCODE_KEY);
-
-    return res.status(200).json({ jwtToken: token });
+    const token = jwt.sign(req.body, JWT_ENCODE_KEY);
+    res.status(200).json({ jwtToken: token });
 }
 
-customersRouter.post('/register', [validateRegisterUserData, checkIsUserExist, saveUserData, generateJWTToken]);
+customersRouter.post(
+    '/register',
+    [
+        validateRegisterUserData,
+        checkIsUserExist,
+        saveUserData,
+        generateJWTToken,
+    ]
+);
 
 // -----------------------------------------------------
 
 const validateJWTToken = async (req, res, next) => {
-    if (!req.body.jwtToken) {
-        return res.status(404).json({ error: 'JWT token is not valid!' });
+    const { jwtToken } = req.body;
+
+    if (!jwtToken) {
+        res.status(404).json({ error: 'JWT token is not valid!' });
     } else next();
 }
 
 const verifyUserByJWTToken = async (req, res, next) => {
-    const jwtToken = req.body.jwtToken;
-    const userData = jwt.verify(jwtToken, process.env.JWT_ENCODE_KEY);
+    const { jwtToken } = req.body;
+    const userData = jwt.verify(jwtToken, JWT_ENCODE_KEY);
 
     res.status(200).json(userData);
 }
@@ -70,37 +74,35 @@ customersRouter.post('/verify', [validateJWTToken, verifyUserByJWTToken]);
 // -----------------------------------------------------
 
 const validateLoginUserData = async (req, res, next) => {
-    const userData = req.body;
-    const login = userData.login;
-    const password = userData.password;
+    const { login, password } = req.body;
 
     if (!login || !password) {
-        return res.status(404).json({ error: 'Login or password is not valid!' });
+        res.status(404).json({ error: 'Login or password is not valid!' });
     } else next();
 }
 
-const generateJWTByUserData = async (req, res, next) => {
-    const login = req.body.login;
-    const password = req.body.password;
+const getUserData = async (req, res, next) => {
+    const { login, password } = req.body;
 
-    let userData;
     const allCustomers = await db.getAllCustomers();
-
-    await allCustomers.map((customer) => {
-        if (customer.login === login && customer.password === password) {
-            userData = customer;
-        }
-    });
+    const userData = await allCustomers.find((customer) => customer.login === login && customer.password === password);
 
     if (!userData) {
         return res.status(404).json({ error: 'User with this credential is not exist!' });
     }
 
-    const token = jwt.sign(userData, process.env.JWT_ENCODE_KEY);
-    res.status(200).json({ jwtToken: token });
+    req.body.userData = userData;
+    next();
 }
 
-customersRouter.post('/login', [validateLoginUserData, generateJWTByUserData]);
+const generateJWTAndSendResponse = async (req, res, next) => {
+    const { userData } = req.body;
+
+    const token = jwt.sign(userData, JWT_ENCODE_KEY);
+    res.status(200).json({ jwtToken: token });
+};
+
+customersRouter.post('/login', [validateLoginUserData, getUserData, generateJWTAndSendResponse]);
 
 
 module.exports = customersRouter;
