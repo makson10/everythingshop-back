@@ -28,15 +28,15 @@ dbWrapper
                 );
 
                 await db.run(
-                    "INSERT INTO `customers` (name, dateOfBirth, email, login, password) VALUES ('Maksim', '2006-12-25', 'pozitivmaks541@gmail.com', 'MaksonDev', 'MaksonDev'), ('maks again', '1990-10-10', 'maksbelyrabota1@gmail.com', 'dickdick', 'dickdick'), ('GIG', '2000-02-20', 'makson94021@gmail.com', 'fuckfuck', 'fuckfuck'), ('Максончик', '2000-02-20', 'pozitivmaks5@gmail.com', 'fuckfuckfuck', 'fuckfuckfuck')"
+                    "INSERT INTO `customers` (name, dateOfBirth, email, login, password) VALUES ('Maksim', '2006-12-25', 'pozitivmaks541@gmail.com', 'MaksonDev', 'MaksonDev')"
                 );
 
                 await db.run(
-                    "CREATE TABLE `feedback` (userName varchar(255) NOT NULL, date bigint(20) NOT NULL, feedbackText mediumtext NOT NULL, uniqueFeedbackId varchar(255) NOT NULL)"
+                    "CREATE TABLE `feedback` (author varchar(255) NOT NULL, date bigint(20) NOT NULL, feedbackText mediumtext NOT NULL, uniqueFeedbackId varchar(255) NOT NULL)"
                 );
 
                 await db.run(
-                    "INSERT INTO `feedback` (userName, date, feedbackText, uniqueFeedbackId) VALUES ('Макс m', 1685727861232, 'классный сайт братанчик, я б тебе отсосал', 'b18b121d-f167-47d6-81a1-2fd1e7e7a5d9')"
+                    "INSERT INTO `feedback` (author, date, feedbackText, uniqueFeedbackId) VALUES ('Макс m', 1685727861232, 'классный сайт братанчик, я б тебе отсосал', 'b18b121d-f167-47d6-81a1-2fd1e7e7a5d9')"
                 );
 
                 await db.run(
@@ -52,7 +52,7 @@ dbWrapper
                 );
 
                 await db.run(
-                    "INSERT INTO `products` (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('Банан', 'Большой, вкусный, желтый банан', '5MjsX6QOWMLtTR2yaMbCVreNKCagMwUXoK1bNjg6.png', 'Pozitiv_ Maks', 100, '416419da-dfc6-4dd1-b1fc-637c2379d2cd', '[]'), ('засосались сучки', 'ммммммммммммм какой засос', 'Sn2lWCe0gEWpRhEck0A9rc6XheI1dkFlCjtguM7z.png', 'Макс m', 2000, 'a1481bb8-556b-452f-a1c8-2857eae5c1e0', '[]')"
+                    `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('порно', 'порно', '["1Qm7pZIm9fmu8bvE-GWNtPSR1BYMqBijy","1eEZ7mn8YUKFKo7mdYLyYgOzWmPocIL1n"]', 'Макс m', 1999, 'efc19cee-1dbf-4127-a784-4d1c5e73d902', '[]')`
                 );
             }
         } catch (dbError) {
@@ -139,10 +139,10 @@ module.exports = {
         }
     },
 
-    addNewFeedback: async ({ name, date, feedbackText, uniqueFeedbackId }) => {
+    addNewFeedback: async ({ author, date, feedbackText, uniqueFeedbackId }) => {
         try {
             await db.run(
-                `INSERT INTO feedback (userName, date, feedbackText, uniqueFeedbackId) VALUES ('${name}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
+                `INSERT INTO feedback (author, date, feedbackText, uniqueFeedbackId) VALUES ('${author}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
             );
         } catch (error) {
             console.error(error);

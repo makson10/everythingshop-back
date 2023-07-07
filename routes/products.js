@@ -200,9 +200,9 @@ productsRouter.delete(
 // -----------------------------------------------------
 
 const validateNewCommentData = async (req, res, next) => {
-    const { name, date, picture, text, uniqueCommentId } = req.body;
+    const { author, date, picture, text, uniqueCommentId } = req.body;
 
-    if (!name || !date || !picture || !text || !uniqueCommentId) {
+    if (!author || !date || !picture || !text || !uniqueCommentId) {
         res.status(404).json({ error: 'New comment data is not valid!' });
     } else next();
 };
@@ -216,9 +216,9 @@ const getOldComments = async (req, res, next) => {
 };
 
 const addNewComment = async (req, res, next) => {
-    const { oldComments, name, date, picture, text, uniqueCommentId } = req.body;
+    const { oldComments, author, date, picture, text, uniqueCommentId } = req.body;
     const newComment = {
-        name: name,
+        author: author,
         date: date,
         picture: picture,
         text: text,

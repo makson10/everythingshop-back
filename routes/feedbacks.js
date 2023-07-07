@@ -12,9 +12,9 @@ feedbacksRouter.get('/', async (req, res) => {
 // -----------------------------------------------------
 
 const validateFeedbackData = async (req, res, next) => {
-    const { name, date, feedbackText, uniqueFeedbackId } = req.body;
+    const { author, date, feedbackText, uniqueFeedbackId } = req.body;
 
-    if (!name || !date || !feedbackText || !uniqueFeedbackId) {
+    if (!author || !date || !feedbackText || !uniqueFeedbackId) {
         res.status(404).json({ error: 'Feedback data is not valid!' });
     } else next();
 }
