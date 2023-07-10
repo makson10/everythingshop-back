@@ -48,11 +48,7 @@ dbWrapper
                 );
 
                 await db.run(
-                    "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photo_id varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
-                );
-
-                await db.run(
-                    `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('порно', 'порно', '["1Qm7pZIm9fmu8bvE-GWNtPSR1BYMqBijy","1eEZ7mn8YUKFKo7mdYLyYgOzWmPocIL1n"]', 'Макс m', 1999, 'efc19cee-1dbf-4127-a784-4d1c5e73d902', '[]')`
+                    "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photoIds varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
                 );
             }
         } catch (dbError) {
@@ -132,7 +128,7 @@ module.exports = {
     addNewProduct: async ({ photoFilesId, title, description, creator, price, uniqueProductId, comments }) => {
         try {
             await db.run(
-                `INSERT INTO products (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFilesId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
+                `INSERT INTO products (title, description, photoIds, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFilesId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
             );
         } catch (error) {
             console.error(error);
