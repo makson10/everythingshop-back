@@ -8,7 +8,7 @@ let db;
 dbWrapper
     .open({
         filename: dbFile,
-        driver: sqlite3.Database
+        driver: sqlite3.Database,
     })
     .then(async dBase => {
         db = dBase;
@@ -32,14 +32,6 @@ dbWrapper
                 );
 
                 await db.run(
-                    "CREATE TABLE `feedback` (author varchar(255) NOT NULL, date bigint(20) NOT NULL, feedbackText mediumtext NOT NULL, uniqueFeedbackId varchar(255) NOT NULL)"
-                );
-
-                await db.run(
-                    "INSERT INTO `feedback` (author, date, feedbackText, uniqueFeedbackId) VALUES ('Макс m', 1685727861232, 'классный сайт братанчик, я б тебе отсосал', 'b18b121d-f167-47d6-81a1-2fd1e7e7a5d9')"
-                );
-
-                await db.run(
                     "CREATE TABLE `google_customers` (id varchar(255) NOT NULL, name varchar(255) NOT NULL, email varchar(255) NOT NULL, picture varchar(255) NOT NULL)"
                 );
 
@@ -48,7 +40,15 @@ dbWrapper
                 );
 
                 await db.run(
+                    "CREATE TABLE `feedback` (author varchar(255) NOT NULL, date bigint(20) NOT NULL, feedbackText mediumtext NOT NULL, uniqueFeedbackId varchar(255) NOT NULL)"
+                );
+
+                await db.run(
                     "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photoIds varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
+                );
+
+                await db.run(
+                    `INSERT INTO products (title, description, photoIds, creator, price, uniqueProductId, comments) VALUES ('83 или 73', 'хороший вопрос', '["13Fat6avVV9Mrj9Bsp_spx303MB6dTF_z","1AV1mlTG64vgtsjaZotqSxlUJCduz4EeR"]', 'Макс m', 7383, '01bfecce-7804-41e0-87ee-ab905df445f1', '[]')`
                 );
             }
         } catch (dbError) {
