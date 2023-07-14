@@ -1,7 +1,14 @@
 const express = require('express');
 const productsRouter = express.Router();
 const db = require("../sqlite");
-const { getPhotoAccessToken } = require('../googleDriveClient');
+const { getPhotoAccessToken, getListOfFiles } = require('../googleDriveClient');
+
+// -----------------------------------------------------
+
+productsRouter.get('/getListOfFiles', async (req, res) => {
+    const listOfFiles = await getListOfFiles();
+    res.status(200).send(listOfFiles);
+});
 
 // -----------------------------------------------------
 
