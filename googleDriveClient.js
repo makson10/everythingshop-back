@@ -1,11 +1,13 @@
 const { google } = require('googleapis');
-const serviceAccountCredentials = require('./googleCredentials.json');
 const fs = require('fs');
 const baseFileFolderPath = process.cwd() + '/temporarilyFiles/';
 
 const scopes = ['https://www.googleapis.com/auth/drive'];
 const auth = new google.auth.JWT(
-    serviceAccountCredentials.client_email, null, serviceAccountCredentials.private_key, scopes
+    process.env.GOOGLE_CLIENT_EMAIL,
+    null,
+    process.env.GOOGLE_PRIVATE_KEY,
+    scopes,
 );
 const drive = google.drive({ version: 'v3', auth });
 
