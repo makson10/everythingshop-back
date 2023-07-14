@@ -1,23 +1,10 @@
-/**
- * Module handles database management
- *
- * Server API calls the methods in here to query and update the SQLite database
- */
-
-// Utilities we need
 const fs = require("fs");
-
-// Initialize the database
-const dbFile = "./.data/everythingshop.db";
+const dbFile = process.cwd() + "/.data/everythingshop.db";
 const exists = fs.existsSync(dbFile);
-const sqlite3 = require("sqlite3").verbose();
 const dbWrapper = require("sqlite");
+const sqlite3 = require("sqlite3").verbose();
 let db;
 
-/* 
-We're using the sqlite wrapper so that we can make async / await connections
-- https://www.npmjs.com/package/sqlite
-*/
 dbWrapper
     .open({
         filename: dbFile,
@@ -41,7 +28,7 @@ dbWrapper
                 );
 
                 await db.run(
-                    "INSERT INTO `customers` (name, dateOfBirth, email, login, password) VALUES ('Maksim', '2006-12-25', 'pozitivmaks541@gmail.com', 'MaksonDev', 'MaksonDev'), ('maks again', '1990-10-10', 'maksbelyrabota1@gmail.com', 'dickdick', 'dickdick'), ('GIG', '2000-02-20', 'makson94021@gmail.com', 'fuckfuck', 'fuckfuck'), ('Максончик', '2000-02-20', 'pozitivmaks5@gmail.com', 'fuckfuckfuck', 'fuckfuckfuck')"
+                    "INSERT INTO `customers` (name, dateOfBirth, email, login, password) VALUES ('Maksim', '2006-12-25', 'pozitivmaks541@gmail.com', 'MaksonDev', 'MaksonDev')"
                 );
 
                 await db.run(
@@ -57,11 +44,7 @@ dbWrapper
                 );
 
                 await db.run(
-                    "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photo_id varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
-                );
-
-                await db.run(
-                    "INSERT INTO `products` (title, description, photo_id, creator, price, uniqueProductId, comments) VALUES ('Банан', 'Большой, вкусный, желтый банан', '5MjsX6QOWMLtTR2yaMbCVreNKCagMwUXoK1bNjg6.png', 'Pozitiv_ Maks', 100, '416419da-dfc6-4dd1-b1fc-637c2379d2cd', '[]'), ('засосались сучки', 'ммммммммммммм какой засос', 'Sn2lWCe0gEWpRhEck0A9rc6XheI1dkFlCjtguM7z.png', 'Макс m', 2000, 'a1481bb8-556b-452f-a1c8-2857eae5c1e0', '[]')"
+                    "CREATE TABLE `products` (title varchar(255) NOT NULL, description varchar(255) NOT NULL, photoIds varchar(255) NOT NULL, creator varchar(255) NOT NULL, price int(11) NOT NULL, uniqueProductId varchar(36) NOT NULL, comments mediumtext NOT NULL)"
                 );
 
                 await db.run(
@@ -98,6 +81,14 @@ module.exports = {
         }
     },
 
+    getProduct: async (uniqueProductId) => {
+        try {
+            return await db.all(`SELECT * from products WHERE uniqueProductId="${uniqueProductId}" LIMIT 1`);
+        } catch (dbError) {
+            console.error(dbError);
+        }
+    },
+
     getAllAdmins: async () => {
         try {
             return await db.all("SELECT * from admins");
@@ -112,5 +103,75 @@ module.exports = {
         } catch (dbError) {
             console.error(dbError);
         }
-    }
+    },
+
+    addNewCustomer: async ({ name, dateOfBirth, email, login, password }) => {
+        try {
+            await db.run(
+                `INSERT INTO customers (name, dateOfBirth, email, login, password) VALUES ('${name}', '${dateOfBirth}', '${email}', '${login}', '${password}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewGoogleCustomer: async ({ id, name, email, picture }) => {
+        try {
+            await db.run(
+                `INSERT INTO google_customers (id, name, email, picture) VALUES ('${id}', '${name}', '${email}', '${picture}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewProduct: async ({ photoFilesId, title, description, creator, price, uniqueProductId, comments }) => {
+        try {
+            await db.run(
+                `INSERT INTO products (title, description, photoIds, creator, price, uniqueProductId, comments) VALUES ('${title}', '${description}', '${photoFilesId}', '${creator}', ${price}, '${uniqueProductId}', '${comments}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    addNewFeedback: async ({ author, date, feedbackText, uniqueFeedbackId }) => {
+        try {
+            await db.run(
+                `INSERT INTO feedback (author, date, feedbackText, uniqueFeedbackId) VALUES ('${author}', ${date}, '${feedbackText}', '${uniqueFeedbackId}')`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    deleteProduct: async (productId) => {
+        try {
+            await db.run(
+                `DELETE FROM products WHERE uniqueProductId = '${productId}'`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    deleteFeedback: async (feedbackId) => {
+        try {
+            await db.run(
+                `DELETE FROM feedback WHERE uniqueFeedbackId = '${feedbackId}'`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
+    updateProductComments: async (productId, newComments) => {
+        try {
+            await db.run(
+                `UPDATE products SET comments = '${newComments}' WHERE uniqueProductId = "${productId}"`
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    },
 };
