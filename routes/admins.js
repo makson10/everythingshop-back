@@ -1,6 +1,6 @@
 const express = require('express');
 const adminsRouter = express.Router();
-const db = require("../sqlite");
+const db = require("../db");
 
 // -----------------------------------------------------
 
@@ -13,10 +13,7 @@ const validateAdminData = async (req, res, next) => {
 }
 
 const checkIsAdminExist = async (req, res, next) => {
-    const { login, password } = req.body;
-
-    const allAdmins = await db.getAllAdmins();
-    const isAdminExist = allAdmins.some((admin) => admin.login === login && admin.password === password);
+    const isAdminExist = await db.isAdminExist(req.body);
 
     if (isAdminExist) {
         res.status(200).json({ success: true });

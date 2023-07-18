@@ -1,12 +1,12 @@
 const express = require('express');
 const feedbacksRouter = express.Router();
-const db = require("../sqlite");
+const db = require("../db");
 
 // -----------------------------------------------------
 
 feedbacksRouter.get('/', async (req, res) => {
     const allFeedbacks = await db.getAllFeedbacks();
-    res.status(200).json(allFeedbacks);
+    res.status(200).send(allFeedbacks);
 });
 
 // -----------------------------------------------------

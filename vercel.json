@@ -1,0 +1,20 @@
+{
+	"builds": [
+		{
+			"src": "server.js",
+			"use": "@vercel/node"
+		}
+	],
+	"routes": [
+		{ "src": "/customers", "dest": "server.js" },
+		{ "src": "/googleCustomers", "dest": "server.js" },
+		{ "src": "/products", "dest": "server.js" },
+		{ "src": "/admins", "dest": "server.js" },
+		{ "src": "/feedbacks", "dest": "server.js" },
+		{ "src": "/customers/(.*)", "dest": "server.js" },
+		{ "src": "/googleCustomers/(.*)", "dest": "server.js" },
+		{ "src": "/products/(.*)", "dest": "server.js" },
+		{ "src": "/admins/(.*)", "dest": "server.js" },
+		{ "src": "/feedbacks/(.*)", "dest": "server.js" }
+	]
+}

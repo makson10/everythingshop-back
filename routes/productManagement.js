@@ -1,61 +1,26 @@
 const express = require('express');
 const productManagementRouter = express.Router();
-const multer = require('multer');
-const db = require("../sqlite");
-const { uploadFile, deleteFile } = require('../googleDriveClient');
-const fs = require('fs').promises;
-const baseFileFolderPath = process.cwd() + '/temporarilyFiles/';
+const db = require("../db");
+const { deleteFile } = require('../googleDriveClient');
 
 // -----------------------------------------------------
 
 const validateProductData = (req, res, next) => {
-    const photoFiles = req.files;
-    const { title, description, creator, price, uniqueProductId, comments } = req.body;
+    const { photoIds, title, description, creator, price, uniqueProductId, comments } = req.body;
 
-    if (!photoFiles.length || !title || !description || !creator || !price || !uniqueProductId || !comments) {
+    if (!photoIds.length || !title || !description || !creator || !price || !uniqueProductId || !comments) {
         res.status(404).json({ error: 'Product data is not valid!' });
     } else next();
 }
 
-const storePhotos = async (req, res, next) => {
-    const photoFiles = req.files;
-
-    const googlePhotoIdPromises = photoFiles.map(async photoFile => {
-        const localFileName = await saveFilesLocaly(photoFile);
-        const googlePhotoId = await storeFilesInGoogleDrive(localFileName);
-        await deleteLocalFiles(localFileName);
-        return googlePhotoId;
-    });
-
-    const googlePhotoIds = await Promise.all(googlePhotoIdPromises).then(res => res);
-
-    req.body.googlePhotoIds = googlePhotoIds;
+const parseFormData = (req, res, next) => {
+    req.body.price = +req.body.price;
+    req.body.comments = JSON.parse(req.body.comments);
     next();
-};
-
-const saveFilesLocaly = async (file) => {
-    const fileName = file.originalname;
-
-    await fs.writeFile(
-        baseFileFolderPath + fileName,
-        new Uint8Array(Buffer.from(file.buffer))
-    );
-
-    return fileName;
-};
-
-const storeFilesInGoogleDrive = async (localFileName) => {
-    const fileId = await uploadFile(localFileName);
-    return fileId;
-};
-
-const deleteLocalFiles = async (localFileName) => {
-    await fs.unlink(baseFileFolderPath + localFileName);
 };
 
 const saveProductData = async (req, res, next) => {
     const productData = req.body;
-    productData.photoFilesId = JSON.stringify(productData.googlePhotoIds);
 
     try {
         await db.addNewProduct(productData);
@@ -67,10 +32,9 @@ const saveProductData = async (req, res, next) => {
 
 productManagementRouter.post(
     '/addNewProduct',
-    multer().array('file'),
     [
         validateProductData,
-        storePhotos,
+        parseFormData,
         saveProductData,
     ]
 );
@@ -84,7 +48,6 @@ const getProductData = async (req, res, next) => {
     if (!product) {
         res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
     } else {
-        product.photoIds = JSON.parse(product.photoIds);
         req.body.product = product;
         next();
     }

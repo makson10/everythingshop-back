@@ -1,6 +1,6 @@
 const express = require('express');
 const productCommentsManagement = express.Router();
-const db = require("../sqlite");
+const db = require("../db");
 
 // -----------------------------------------------------
 
@@ -19,28 +19,16 @@ const getProductData = async (req, res, next) => {
     if (!product) {
         res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
     } else {
-        product.photoIds = JSON.parse(product.photoIds);
-        req.body.product = product;
+        // product.photoIds = JSON.parse(product.photoIds);
+        req.body.oldComments = product.comments;
         next();
     }
-};
-
-const getOldComments = async (req, res, next) => {
-    const { product: { comments: rawOldComments } } = req.body;
-
-    const oldComments = await JSON.parse(rawOldComments);
-    req.body.oldComments = oldComments;
-    next();
 };
 
 const addNewComment = async (req, res, next) => {
     const { oldComments, author, date, picture, text, uniqueCommentId } = req.body;
     const newComment = {
-        author: author,
-        date: date,
-        picture: picture,
-        text: text,
-        uniqueCommentId: uniqueCommentId,
+        author, date, picture, text, uniqueCommentId,
     };
 
     const newComments = [...oldComments, newComment];
@@ -52,18 +40,16 @@ const addNewComment = async (req, res, next) => {
 const updateComments = async (req, res, next) => {
     const { productId } = req.params;
     const { newComments } = req.body;
-    const newCommentsInJSON = JSON.stringify(newComments);
 
-    await db.updateProductComments(productId, newCommentsInJSON);
+    await db.updateProductComments(productId, newComments);
     res.status(200).json({ success: true });
 };
 
 productCommentsManagement.post(
-    '/addComment/:productId',
+    '/:productId/addComment',
     [
         validateNewCommentData,
         getProductData,
-        getOldComments,
         addNewComment,
         updateComments
     ]
@@ -97,10 +83,9 @@ const removeComments = async (req, res, next) => {
 
 
 productCommentsManagement.delete(
-    '/deleteComment/:productId/:commentId',
+    '/:productId/deleteComment/:commentId',
     [
         getProductData,
-        getOldComments,
         checkIsThisCommentExist,
         removeComments,
         updateComments,

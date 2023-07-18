@@ -1,6 +1,6 @@
 const express = require('express');
 const googleCustomersRouter = express.Router();
-const db = require("../sqlite");
+const db = require("../db");
 const jwt = require('jsonwebtoken');
 const JWT_ENCODE_KEY = process.env.JWT_ENCODE_KEY;
 
