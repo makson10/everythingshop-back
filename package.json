@@ -4,7 +4,8 @@
 	"description": "Node js backend for Everythingshop",
 	"main": "server.js",
 	"scripts": {
-		"start": "node server.js"
+		"start": "node server.js",
+		"postinstall": "prisma generate"
 	},
 	"dependencies": {
 		"@prisma/client": "^5.0.0",
