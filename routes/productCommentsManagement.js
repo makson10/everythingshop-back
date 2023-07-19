@@ -19,7 +19,6 @@ const getProductData = async (req, res, next) => {
     if (!product) {
         res.status(404).json({ success: false, errorMessage: 'Product with this uniqueProductId not found!' });
     } else {
-        // product.photoIds = JSON.parse(product.photoIds);
         req.body.oldComments = product.comments;
         next();
     }
@@ -80,7 +79,6 @@ const removeComments = async (req, res, next) => {
     req.body.newComments = newComments;
     next();
 };
-
 
 productCommentsManagement.delete(
     '/:productId/deleteComment/:commentId',

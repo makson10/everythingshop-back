@@ -13,7 +13,7 @@ const validateProductData = (req, res, next) => {
     } else next();
 }
 
-const parseFormData = (req, res, next) => {
+const parseData = (req, res, next) => {
     req.body.price = +req.body.price;
     req.body.comments = JSON.parse(req.body.comments);
     next();
@@ -34,7 +34,7 @@ productManagementRouter.post(
     '/addNewProduct',
     [
         validateProductData,
-        parseFormData,
+        parseData,
         saveProductData,
     ]
 );
