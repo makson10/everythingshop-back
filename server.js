@@ -12,7 +12,9 @@ const productCommentsManagement = require("./routes/productCommentsManagement");
 const adminsRouter = require("./routes/admins");
 const feedbacksRouter = require("./routes/feedbacks");
 
-app.use(cors());
+app.use(cors({
+    origin: 'https://everythingshop.vercel.app',
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
