@@ -62,9 +62,9 @@ const validateJWTToken = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const { jwtToken } = req.body;
+	const { token } = req.body;
 
-	if (!jwtToken) {
+	if (!token) {
 		res.status(404).json({ error: 'JWT token is not valid!' });
 	} else next();
 };
@@ -74,10 +74,10 @@ const verifyGoogleUserByJWTToken = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const { jwtToken } = req.body;
-	const googleUserData = jwt.verify(jwtToken, JWT_ENCODE_KEY);
+	const { token } = req.body;
+	const user = jwt.verify(token, JWT_ENCODE_KEY);
 
-	res.status(200).json(googleUserData);
+	res.status(200).json(user);
 };
 
 const validateLoginGoogleUserData = async (
@@ -101,16 +101,16 @@ const getGoogleUserData = async (
 
 	const allGoogleCustomers =
 		await DatabaseUtils.googleCustomer.getAllGoogleCustomers();
-	const googleUserData = allGoogleCustomers.find(
+	const googleUser = allGoogleCustomers.find(
 		(googleCustomer: { id: string }) => googleCustomer.id === id
 	);
 
-	if (!googleUserData) {
+	if (!googleUser) {
 		res.status(404).json({ error: 'User with this data is not exist!' });
 		return;
 	}
 
-	req.body.googleUserData = googleUserData;
+	req.body.user = googleUser.toObject();
 	next();
 };
 
@@ -119,10 +119,10 @@ const generateJWTAndSendResponse = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const { googleUserData } = req.body;
+	const { user } = req.body;
 
-	const token = jwt.sign(googleUserData, JWT_ENCODE_KEY);
-	res.status(200).json({ jwtToken: token });
+	const token = jwt.sign(user, JWT_ENCODE_KEY);
+	res.status(200).json({ token });
 };
 
 export const get = [getAllGoogleCustomers];

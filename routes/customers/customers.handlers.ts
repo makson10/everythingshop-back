@@ -44,7 +44,8 @@ const saveUserData = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	await DatabaseUtils.customer.addNewCustomer(req.body);
+	const newUser = await DatabaseUtils.customer.addNewCustomer(req.body);
+	req.body = newUser.toObject();
 	next();
 };
 
@@ -53,8 +54,10 @@ const generateJWTToken = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const token = jwt.sign(req.body, JWT_ENCODE_KEY);
-	res.status(200).json({ jwtToken: token });
+	const newUser = req.body;
+	const token = jwt.sign(newUser, JWT_ENCODE_KEY);
+
+	res.status(200).json({ token, user: newUser });
 };
 
 const validateJWTToken = async (
@@ -62,9 +65,9 @@ const validateJWTToken = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const { jwtToken } = req.body;
+	const { token } = req.body;
 
-	if (!jwtToken) {
+	if (!token) {
 		res.status(404).json({ error: 'JWT token is not valid!' });
 	} else next();
 };
@@ -74,8 +77,8 @@ const verifyUserByJWTToken = async (
 	res: Response,
 	next: NextFunction
 ) => {
-	const { jwtToken } = req.body;
-	const userData = jwt.verify(jwtToken, JWT_ENCODE_KEY);
+	const { token } = req.body;
+	const userData = jwt.verify(token, JWT_ENCODE_KEY);
 
 	res.status(200).json(userData);
 };
@@ -118,7 +121,7 @@ const generateJWTAndSendResponse = async (
 	const { user } = req.body;
 
 	const token = jwt.sign(user, JWT_ENCODE_KEY);
-	res.status(200).json({ jwtToken: token });
+	res.status(200).json({ token, user });
 };
 
 export const get = [getAllCustomers];

@@ -4,7 +4,7 @@
 	"description": "Node js backend for Everythingshop",
 	"main": "server.js",
 	"scripts": {
-		"dev": "ts-node server.ts",
+		"dev": "nodemon server.ts",
 		"build": "tsc",
 		"serve": "node dist/server.ts"
 	},

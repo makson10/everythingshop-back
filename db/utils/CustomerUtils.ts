@@ -13,7 +13,7 @@ class CustomerUtils {
 		login,
 		password,
 	}: CustomerType) {
-		await Customer.create({
+		return await Customer.create({
 			name,
 			dateOfBirth,
 			email,
