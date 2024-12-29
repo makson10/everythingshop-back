@@ -1,24 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import DatabaseUtils from '../../db/utils';
-import { deleteFile } from '../../googleDriveClient';
+import { utapi } from '../../utils/utapi';
+import multer from 'multer';
 
 const validateProductData = (
 	req: Request,
 	res: Response,
 	next: NextFunction
 ): void => {
-	const {
-		photoIds,
-		title,
-		description,
-		creator,
-		price,
-		uniqueProductId,
-		comments,
-	} = req.body;
+	const { title, description, creator, price, uniqueProductId, comments } =
+		req.body;
 
 	if (
-		!photoIds.length ||
 		!title ||
 		!description ||
 		!creator ||
@@ -26,7 +19,7 @@ const validateProductData = (
 		!uniqueProductId ||
 		!comments
 	) {
-		res.status(404).json({ error: 'Product data is not valid!' });
+		res.status(400).json({ error: 'Product data is not valid!' });
 	} else next();
 };
 
@@ -36,7 +29,19 @@ const parseData = (req: Request, res: Response, next: NextFunction): void => {
 	next();
 };
 
-const saveProductData = async (
+const storeImages = async (req: Request, res: Response, next: NextFunction) => {
+	const files = req.files as Express.Multer.File[];
+	const convertedFiles = files.map(
+		(file, index) =>
+			new File([file.buffer], req.body.uniqueProductId + '_' + index + '.png')
+	);
+	const response = await utapi.uploadFiles(convertedFiles);
+
+	req.body.photoIds = response.map((file) => file.data?.url);
+	next();
+};
+
+const storeProductData = async (
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -48,7 +53,7 @@ const saveProductData = async (
 		res.status(200).json({ success: true });
 	} catch (error) {
 		res
-			.status(404)
+			.status(400)
 			.json({ success: false, errorMessage: 'Something went wrong' });
 	}
 };
@@ -60,14 +65,14 @@ const getProductData = async (
 ): Promise<void> => {
 	const { productId } = req.params;
 
-	const product = await DatabaseUtils.product.getProduct(productId);
+	const product = await DatabaseUtils.product.getProductByUniqueId(productId);
 	if (!product) {
 		res.status(404).json({
 			success: false,
 			errorMessage: 'Product with this uniqueProductId not found!',
 		});
 	} else {
-		req.body.product = product;
+		req.body.product = product.toObject();
 		next();
 	}
 };
@@ -77,14 +82,13 @@ const deleteProductPhotoFiles = async (
 	res: Response,
 	next: NextFunction
 ): Promise<void> => {
-	const { photoIds } = req.body.product;
+	const { photoIds: imageUrls } = req.body.product;
+	const imageDomain = 'https://utfs.io/f/';
 
-	await Promise.all(
-		photoIds.map(async (photoId: string) => {
-			await deleteFile(photoId);
-		})
+	const deletingFilesKeys = imageUrls.map((url: string) =>
+		url.replace(imageDomain, '')
 	);
-
+	await utapi.deleteFiles(deletingFilesKeys);
 	next();
 };
 
@@ -100,10 +104,13 @@ const deleteProductData = async (
 };
 
 export const addNewProductPost = [
+	multer().any(),
 	validateProductData,
 	parseData,
-	saveProductData,
+	storeImages,
+	storeProductData,
 ];
+
 export const deleteProductDelete = [
 	getProductData,
 	deleteProductPhotoFiles,

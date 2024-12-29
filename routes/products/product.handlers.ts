@@ -1,11 +1,5 @@
 import DatabaseUtils from '../../db/utils';
 import { Request, Response, NextFunction } from 'express';
-import { getPhotoAccessToken } from '../../googleDriveClient';
-
-const getPhotoAccessKey = async (req: Request, res: Response) => {
-	const photoAccessKey = await getPhotoAccessToken();
-	res.status(200).json({ token: photoAccessKey.token });
-};
 
 const getAllProducts = async (
 	req: Request,
@@ -41,7 +35,7 @@ const getProductData = async (
 			errorMessage: 'Product with this uniqueProductId not found!',
 		});
 	} else {
-		req.body.data = product;
+		req.body.data = product.toObject();
 		next();
 	}
 };
@@ -55,7 +49,6 @@ const doesProductExist = async (req: Request, res: Response) => {
 	res.json(doesProductExist);
 };
 
-export const getPhotoAccessKeyGet = [getPhotoAccessKey];
 export const get = [getAllProducts, sendResponse];
 export const getById = [getProductData, sendResponse];
 export const doesProductExistGet = [doesProductExist];

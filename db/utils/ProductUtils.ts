@@ -6,7 +6,11 @@ class ProductUtils {
 		return await Product.find();
 	}
 
-	static async getProduct(uniqueProductId: string) {
+	static async getProduct(_id: string) {
+		return await Product.findOne({ _id });
+	}
+
+	static async getProductByUniqueId(uniqueProductId: string) {
 		return await Product.findOne({ uniqueProductId });
 	}
 
@@ -50,7 +54,7 @@ class ProductUtils {
 		uniqueProductId: string,
 		newComments: CommentType[]
 	) {
-		await Product.updateOne({ uniqueProductId }, { comments: newComments[0] });
+		await Product.updateOne({ uniqueProductId }, { comments: newComments });
 	}
 }
 

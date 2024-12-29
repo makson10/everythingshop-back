@@ -20,16 +20,16 @@ const getProductData = async (
 ) => {
 	const { productId } = req.params;
 
-	const product = await DatabaseUtils.product.getProduct(productId);
+	const product = await DatabaseUtils.product.getProductByUniqueId(productId);
 	if (!product) {
 		res.status(404).json({
 			success: false,
 			errorMessage: 'Product with this uniqueProductId not found!',
 		});
-	} else {
-		req.body.oldComments = product.comments;
-		next();
+		return;
 	}
+	req.body.oldComments = product.comments.toObject();
+	next();
 };
 
 const addNewComment = async (
@@ -39,6 +39,7 @@ const addNewComment = async (
 ) => {
 	const { oldComments, author, date, picture, text, uniqueCommentId } =
 		req.body;
+
 	const newComment = {
 		author,
 		date,
