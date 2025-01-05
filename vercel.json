@@ -1,7 +1,11 @@
 {
 	"builds": [
 		{
-			"src": "server.ts",
+			"src": "dist/*.js",
+			"use": "@vercel/node"
+		},
+		{
+			"src": "server.js",
 			"use": "@vercel/node"
 		}
 	],
