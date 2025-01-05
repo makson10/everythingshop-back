@@ -1,4 +1,10 @@
 {
+	"builds": [
+		{
+			"src": "server.ts",
+			"use": "@vercel/node"
+		}
+	],
 	"routes": [
 		{ "src": "/customers", "dest": "dist/server.js" },
 		{ "src": "/googleCustomers", "dest": "dist/server.js" },
