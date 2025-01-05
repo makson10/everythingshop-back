@@ -1,11 +1,4 @@
 {
-	"buildCommand": "npm run build",
-	"builds": [
-		{
-			"src": "dist/server.js",
-			"use": "@vercel/node"
-		}
-	],
 	"routes": [
 		{ "src": "/customers", "dest": "dist/server.js" },
 		{ "src": "/googleCustomers", "dest": "dist/server.js" },
