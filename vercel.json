@@ -1,20 +1,20 @@
 {
 	"builds": [
 		{
-			"src": "server.js",
+			"src": "dist/server.js",
 			"use": "@vercel/node"
 		}
 	],
 	"routes": [
-		{ "src": "/customers", "dest": "server.js" },
-		{ "src": "/googleCustomers", "dest": "server.js" },
-		{ "src": "/products", "dest": "server.js" },
-		{ "src": "/admins", "dest": "server.js" },
-		{ "src": "/feedbacks", "dest": "server.js" },
-		{ "src": "/customers/(.*)", "dest": "server.js" },
-		{ "src": "/googleCustomers/(.*)", "dest": "server.js" },
-		{ "src": "/products/(.*)", "dest": "server.js" },
-		{ "src": "/admins/(.*)", "dest": "server.js" },
-		{ "src": "/feedbacks/(.*)", "dest": "server.js" }
+		{ "src": "/customers", "dest": "dist/server.js" },
+		{ "src": "/googleCustomers", "dest": "dist/server.js" },
+		{ "src": "/products", "dest": "dist/server.js" },
+		{ "src": "/admins", "dest": "dist/server.js" },
+		{ "src": "/feedbacks", "dest": "dist/server.js" },
+		{ "src": "/customers/(.*)", "dest": "dist/server.js" },
+		{ "src": "/googleCustomers/(.*)", "dest": "dist/server.js" },
+		{ "src": "/products/(.*)", "dest": "dist/server.js" },
+		{ "src": "/admins/(.*)", "dest": "dist/server.js" },
+		{ "src": "/feedbacks/(.*)", "dest": "dist/server.js" }
 	]
 }
